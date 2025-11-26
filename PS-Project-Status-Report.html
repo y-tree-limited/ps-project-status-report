@@ -65,7 +65,7 @@
         .status-green { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
         .status-amber { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
 
-        /* Timeline Fixes */
+        /* Timeline Fixes with Sliders */
         .timeline-container { margin-top: 15px; }
         .timeline-row {
             display: grid;
@@ -85,7 +85,22 @@
         .timeline-bar {
             height: 100%;
             border-radius: 6px;
+            pointer-events: none; /* Let clicks pass through to slider */
         }
+        
+        /* The Invisible Slider Overlay */
+        .bar-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0; /* Invisible */
+            cursor: col-resize; /* Show resize cursor on hover */
+            margin: 0;
+            z-index: 10;
+        }
+
         .timeline-status {
             font-size: 12px;
             font-weight: 600;
@@ -204,7 +219,7 @@
         <h1 contenteditable="true">CrowdStrike Project Status</h1>
         <div class="date" contenteditable="true">Status Report: Nov 25, 2025</div>
     </div>
-    <div class="status-pill status-red" contenteditable="true">STATUS: BLOCKED</div>
+    <div class="status-pill status-red" contenteditable="true" title="Click text to edit">STATUS: BLOCKED</div>
 </div>
 
 <div class="dashboard-grid">
@@ -228,45 +243,50 @@
         <!-- Timeline Impact -->
         <div class="card">
             <h2>Timeline & Workstreams</h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">💡 Drag bars to update progress</div>
             <div class="timeline-container">
                 <!-- Row 1 -->
                 <div class="timeline-row">
                     <div class="timeline-label">AWS Integration</div>
                     <div class="timeline-track">
-                        <div class="timeline-bar" style="width: 65%; background: var(--green);"></div>
+                        <div class="timeline-bar" id="bar1" style="width: 65%; background: var(--green);"></div>
+                        <input type="range" min="0" max="100" value="65" class="bar-slider" oninput="document.getElementById('bar1').style.width = this.value + '%'">
                     </div>
-                    <div class="timeline-status text-green">Target: Dec 15 (At Risk)</div>
+                    <div class="timeline-status text-green" contenteditable="true">Target: Dec 15 (At Risk)</div>
                 </div>
                 <!-- Row 2 -->
                 <div class="timeline-row">
                     <div class="timeline-label">SaaS (Falcon Shield)</div>
                     <div class="timeline-track">
-                        <div class="timeline-bar" style="width: 20%; background: var(--amber);"></div>
+                        <div class="timeline-bar" id="bar2" style="width: 20%; background: var(--amber);"></div>
+                        <input type="range" min="0" max="100" value="20" class="bar-slider" oninput="document.getElementById('bar2').style.width = this.value + '%'">
                     </div>
-                    <div class="timeline-status text-amber">Paused (~20%)</div>
+                    <div class="timeline-status text-amber" contenteditable="true">Paused (~20%)</div>
                 </div>
                 <!-- Row 3 -->
                 <div class="timeline-row">
                     <div class="timeline-label">Email Sec (Avanan)</div>
                     <div class="timeline-track">
-                        <div class="timeline-bar" style="width: 10%; background: var(--amber);"></div>
+                        <div class="timeline-bar" id="bar3" style="width: 10%; background: var(--amber);"></div>
+                        <input type="range" min="0" max="100" value="10" class="bar-slider" oninput="document.getElementById('bar3').style.width = this.value + '%'">
                     </div>
-                    <div class="timeline-status text-amber">Paused (~10%)</div>
+                    <div class="timeline-status text-amber" contenteditable="true">Paused (~10%)</div>
                 </div>
                 <!-- Row 4 -->
                 <div class="timeline-row">
                     <div class="timeline-label">SIEM / Syslog</div>
                     <div class="timeline-track">
-                        <div class="timeline-bar" style="width: 15%; background: var(--red);"></div>
+                        <div class="timeline-bar" id="bar4" style="width: 15%; background: var(--red);"></div>
+                        <input type="range" min="0" max="100" value="15" class="bar-slider" oninput="document.getElementById('bar4').style.width = this.value + '%'">
                     </div>
-                    <div class="timeline-status text-red">Stalled (London)</div>
+                    <div class="timeline-status text-red" contenteditable="true">Stalled (London)</div>
                 </div>
             </div>
         </div>
 
         <!-- SaaS & Email Detail -->
         <div class="card">
-            <h2>Advanced Threat Detection (Owner: Me - Support)</h2>
+            <h2>🛡️ Advanced Threat Detection (Owner: Me - Support)</h2>
             <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;">
                 Parent Epic: <strong>PA-1405 (Q3 & Q4 2025)</strong>
             </div>
@@ -300,7 +320,7 @@
 
         <!-- AWS Detail -->
         <div class="card">
-            <h2>AWS Workstream Status (Owner: Nicola - PE)</h2>
+            <h2>☁️ AWS Workstream Status (Owner: Nicola - PE)</h2>
             <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;">
                 Parent Ticket: <strong>DSO-3799 (Cloud Threat Detection)</strong>
             </div>
@@ -334,7 +354,7 @@
 
         <!-- Stalled Tickets -->
         <div class="card">
-            <h2>Blocked Vendor Tickets (Grant Thornton)</h2>
+            <h2>🚫 Blocked Vendor Tickets (Grant Thornton)</h2>
             <table class="data-table" contenteditable="true">
                 <thead>
                     <tr>
@@ -394,7 +414,7 @@
 
         <!-- Risks -->
         <div class="card">
-            <h2>Project Risks</h2>
+            <h2>⚠️ Project Risks</h2>
             <ul contenteditable="true" style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.6;">
                 <li style="margin-bottom: 10px;"><strong>Dependencies:</strong> AWS deployment (Nicola) will stall in Q1 2026 without Support team input.</li>
                 <li style="margin-bottom: 10px;"><strong>Blindspots:</strong> Critical systems (Salesforce, GitHub) remain unmonitored by Falcon.</li>
@@ -414,7 +434,7 @@
                         Gather missing context (Domain Controllers, VPN Gateways, VIP list) to finalize Asset Inventory for GT (CTM0002993).
                     </div>
                     <div class="impact-box">
-                        STATUS: Unassigned. Requires ~2hrs dedicated focus. Currently blocked by BAU load.
+                        🚫 STATUS: Unassigned. Requires ~2hrs dedicated focus. Currently blocked by BAU load.
                     </div>
                 </li>
 
@@ -425,7 +445,7 @@
                         Allocate 2 days/week to assist with Tier 0 SaaS integrations (Salesforce/Slack) to unblock progress.
                     </div>
                     <div class="impact-box">
-                        IMPACT: 1st Line Support will be suspended for 2 days/week. SLA breaches are expected.
+                        📉 IMPACT: 1st Line Support will be suspended for 2 days/week. SLA breaches are expected.
                     </div>
                 </li>
                 
@@ -436,7 +456,7 @@
                         A separate business case for additional headcount is currently under review by leadership. This stream is being managed outside of this project group.
                     </div>
                     <div class="impact-box-neutral">
-                        IMPACT: Project velocity is expected to stabilize in Q2 pending the outcome of this external review.
+                        🔄 IMPACT: Project velocity is expected to stabilize in Q2 pending the outcome of this external review.
                     </div>
                 </li>
                 
@@ -447,7 +467,7 @@
                         Officially move AWS Integration target to Q1 2026 to align with current resource reality.
                     </div>
                     <div class="impact-box">
-                        IMPACT: Extended period of security blindspots in AWS environment.
+                        ⚠️ IMPACT: Extended period of security blindspots in AWS environment.
                     </div>
                 </li>
             </ul>
@@ -456,6 +476,8 @@
     </div>
 
 </div>
+
+<div class="editable-hint">💡 Click any text to edit before screenshotting</div>
 
 </body>
 </html>
