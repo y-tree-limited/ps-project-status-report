@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Status</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --red: #ef4444;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
+            --gray: #64748b;
+            --light-gray: #f1f5f9;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            max-width: 950px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+        .header h1 { margin: 0; font-size: 28px; }
+        .header .date { color: var(--gray); font-weight: 500; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        
+        .dashboard-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative; 
+            border-left: 5px solid transparent; 
+            transition: border-color 0.3s ease;
+        }
+
+        .btn-delete-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-delete-section:hover { color: var(--red); }
+        .btn-delete-section svg { width: 16px; height: 16px; }
+        
+        h2 { margin-top: 0; font-size: 18px; color: #475569; margin-bottom: 15px; transition: color 0.3s ease; }
+
+        .card-status-red { border-left-color: var(--red); }
+        .card-status-red h2 { color: var(--red); cursor: pointer; }
+
+        .card-status-amber { border-left-color: var(--amber); }
+        .card-status-amber h2 { color: var(--amber); cursor: pointer; }
+
+        .card-status-green { border-left-color: var(--green); }
+        .card-status-green h2 { color: var(--green); cursor: pointer; }
+
+        .card-status-blue { border-left-color: var(--blue); }
+        .card-status-blue h2 { color: var(--blue); cursor: pointer; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter 0.2s ease;
+        }
+        .status-pill:hover { filter: brightness(95%); }
+
+        /* FIX: Force children of the status pill to inherit colour/bg so paste formatting doesn't break it */
+        #overall-status * {
+            background-color: transparent !important;
+            color: inherit !important;
+        }
+
+        .status-red { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+        .status-green { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+        .status-amber { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
+
+        .timeline-container { margin-top: 15px; }
+        .timeline-row {
+            display: grid;
+            grid-template-columns: 180px 1fr 150px 30px;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+        .timeline-label { font-size: 13px; font-weight: 600; color: #334155; cursor: text; }
+        .timeline-track {
+            height: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .timeline-bar {
+            height: 100%;
+            border-radius: 6px;
+            pointer-events: none; 
+            transition: background 0.2s ease, width 0.1s ease;
+        }
+
+        .bg-green { background: var(--green); }
+        .bg-amber { background: var(--amber); }
+        .bg-red { background: var(--red); }
+        .bg-blue { background: var(--blue); }
+        .bg-gray { background: #94a3b8; }
+        
+        .bar-slider {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: col-resize; margin: 0; z-index: 10;
+        }
+
+        .timeline-status {
+            font-size: 12px; font-weight: 600; text-align: right;
+            transition: color 0.2s ease; cursor: pointer; padding: 4px; border-radius: 4px;
+        }
+        .timeline-status:hover { background-color: #f1f5f9; }
+
+        .text-red { color: var(--red); }
+        .text-green { color: var(--green); }
+        .text-amber { color: var(--amber); }
+        .text-blue { color: var(--blue); }
+        .text-gray { color: var(--gray); }
+
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+        .data-table th { text-align: left; color: var(--gray); padding-bottom: 10px; font-weight: 500; border-bottom: 1px solid #e2e8f0; }
+        .data-table td { padding: 12px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        .task-cell { display: flex; align-items: center; gap: 8px; }
+
+        .jira-key { 
+            font-family: monospace; background: #e0f2fe; color: #0369a1; 
+            padding: 2px 6px; border-radius: 4px; font-size: 12px; 
+            white-space: nowrap; cursor: text;
+        }
+        
+        .task-status { 
+            font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; 
+            text-transform: uppercase; cursor: pointer; transition: filter 0.2s ease; display: inline-block;
+        }
+        .task-status:hover { filter: brightness(95%); }
+
+        .ts-done { background: #dcfce7; color: #166534; }
+        .ts-progress { background: #dbeafe; color: #1e40af; }
+        .ts-blocked { background: #fee2e2; color: #991b1b; }
+        .ts-ready { background: #f1f5f9; color: #64748b; }
+        .ts-todo { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .ts-paused { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        .action-list { padding-left: 0; list-style: none; margin: 0; }
+        .action-item { 
+            background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; 
+            border-radius: 8px; margin-bottom: 10px; font-size: 13px;
+            position: relative;
+        }
+        .action-item .btn-delete-row {
+            position: absolute; top: 10px; right: 10px;
+        }
+        .action-tag {
+            font-weight: 700; font-size: 11px; text-transform: uppercase;
+            padding: 2px 6px; border-radius: 4px; margin-right: 6px; cursor: pointer;
+        }
+        .at-decision { background: #fef3c7; color: #92400e; }
+        .at-action { background: #dbeafe; color: #1e40af; }
+        .at-context { background: #f3f4f6; color: #4b5563; }
+        .at-blocked { background: #fee2e2; color: #991b1b; }
+
+        .impact-box, .impact-box-neutral, .impact-box-success {
+            margin-top: 8px; padding: 8px; font-size: 12px; font-weight: 500;
+            border-radius: 4px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .impact-box { background: #fff1f2; border-left: 3px solid #e11d48; color: #be123c; }
+        .impact-box-neutral { background: #f8fafc; border-left: 3px solid #64748b; color: #475569; }
+        .impact-box-success { background: #f0fdf4; border-left: 3px solid #16a34a; color: #15803d; }
+
+        .btn {
+            padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+            cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-primary { background: #0f172a; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-primary:hover { background: #334155; }
+        
+        .btn-add-section, .btn-add-row {
+            width: 100%; padding: 8px; background: white; border: 1px dashed #cbd5e1;
+            border-radius: 6px; color: #64748b; font-weight: 600; cursor: pointer;
+            margin-top: 10px; transition: all 0.2s;
+        }
+        .btn-add-section { padding: 15px; border-width: 2px; margin-top: 20px; }
+        .btn-add-section:hover, .btn-add-row:hover { border-color: #cbd5e1; color: #334155; background: #f8fafc; }
+
+        .btn-delete-row, .btn-delete-task {
+            background: transparent; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-delete-row:hover, .btn-delete-task:hover { color: var(--red); }
+        .btn-delete-row svg, .btn-delete-task svg { width: 14px; height: 14px; }
+
+        .editable-hint {
+            position: fixed; bottom: 20px; right: 20px; background: #334155;
+            color: white; padding: 10px 20px; border-radius: 30px; font-size: 12px;
+            opacity: 0.8; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1 contenteditable="true" id="report-title">SINGLE SIGN ON - OKR UPDATE</h1>
+        <div class="date" contenteditable="true" id="report-date">Status Report: JAN 14, 2026</div>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-primary" onclick="downloadUpdatedHTML()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download Updated Report
+        </button>
+        <div class="status-pill status-amber" contenteditable="true" title="Click to cycle status" id="overall-status">STATUS: in progress</div>
+    </div>
+</div>
+
+<div class="dashboard-grid" id="main-grid">
+    
+    <div class="card card-status-amber" id="root-cause-card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true" title="Click to change theme">Current Blocker: Resource</h2>
+        <div contenteditable="true" id="root-cause-text">
+            <p style="font-size: 13px; color: rgb(51, 65, 85); margin-bottom: 12px;"><span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"><b>Salesforce Pushed to Q2</b></span></p><p style="font-size: 13px; color: rgb(51, 65, 85); margin-bottom: 12px;"><span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">Due to resourcing constraints, Salesforce SSO will highly likely be pushed to Q2. This is primarily due to increased BAU and reduced team resource.</span></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">Executive Summary</h2>
+        <div id="exec-summary" contenteditable="true">
+            <p style="line-height: 1.6; color: #334155;"><strong>Platform Engineering:</strong>&nbsp;Open WebUI and ArgoCD integrations are complete. Work on Kibana/Elastic Search is proceeding without blockers.
+<br><b data-path-to-node="5,0" data-index-in-node="139">Timeline Update:</b> The addition of Chainguard has shifted the schedule slightly. While a January completion is possible, the realistic forecast is now <b data-path-to-node="5,0" data-index-in-node="288">Week 1 February</b> (Pessimistic: Week 2 Feb).
+<br><b data-path-to-node="5,0" data-index-in-node="331">Access Requirements:</b> Immediate Admin permissions required for Langfuse to unblock configuration.<br><br><strong>Platform Support:</strong>&nbsp;Zoom SSO is fully planned and will begin this month. Salesforce SSO has been de-prioritised and likely pushed to Q2 due to resourcing difficulties.<br><b>Timeline Update:</b>&nbsp;Salesforce pushed to Q2, Zoom will be updated to allow for increased time and resource so current deadlines may be extended.<br><b>Access Requirements: </b>No changes.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">Timeline &amp; Workstreams</h2>
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Drag slider to resize. Click text to change colour/name.</div>
+        <div class="timeline-container" id="timeline-container">
+            <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Prerequisites &amp; Compliance</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Not started</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Salesforce (tier 0)</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-red" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-red" contenteditable="true" title="Click to change color">Delayed to Q2</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Zoom (tier 1)</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Not started</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div>
+             <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Spring Boot Admin</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-green" style="width: 100%;"></div>
+                    <input type="range" min="0" max="100" value="100" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-green" contenteditable="true" title="Click to change color">Done</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">ArgoCD</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-green" style="width: 100%;"></div>
+                    <input type="range" min="0" max="100" value="100" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-green" contenteditable="true" title="Click to change color">Done</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        <div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Open WebUI</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-green" style="width: 100%;"></div>
+                    <input type="range" min="0" max="100" value="100" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-green" contenteditable="true" title="Click to change color">Done</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Kibana + Elasticsearch</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-amber" style="width: 18%;"></div>
+                    <input type="range" min="0" max="100" value="18" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-amber" contenteditable="true" title="Click to change color">In progress</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Proxmox</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Not started</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Kiali (Office Only)</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color"><span style="background-color: rgb(241, 245, 249);">Not started</span></div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Langfuse</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color"><span style="background-color: rgb(241, 245, 249);">Not started</span></div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">Chainguard</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color"><span style="background-color: rgb(241, 245, 249);">Not started</span></div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">AWS</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Not started</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div><div class="timeline-row">
+                <div class="timeline-label" contenteditable="true">AWS Cleanup (Delete Old Apps)</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 0%;"></div>
+                    <input type="range" min="0" max="100" value="0" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Not started</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+            </div></div>
+        <button class="btn-add-row" onclick="addTimelineRow()">+ Add Timeline Item</button>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">Project Risks</h2>
+        <ul contenteditable="true" style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.6;" id="risk-list">
+            <li style="margin-bottom: 10px;"><b>Zoom:&nbsp;</b>Resource - we need to ensure adequate time is committed every week otherwise the project may soon fall behind and we'll be in breach of BYOD compliance.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">Recommended Actions &amp; Decisions</h2>
+        <ul class="action-list" contenteditable="true" id="action-list">
+            
+            
+
+            
+
+            
+
+            <li class="action-item"><span class="action-tag at-decision" title="Click to cycle type">Decision</span>&nbsp;<b>Delay Salesforce SSO to Q2</b><div style="margin-top: 5px; color: rgb(100, 116, 139);">Due to resourcing constraints and a heavy influx of tickets/meetings/BAU, we are unable to fully commit and guarantee delivery of Salesforce SSO in Q1. This is being pushed to Q2 to ensure adequate support, resource, and effective delivery.</div><div class="impact-box" title="Click to toggle color theme" style="transition-property: all;">IMPACT: Delay on delivery, but reduced strain on Platform Support</div></li>
+            
+        </ul>
+        <button class="btn-add-row" onclick="addActionItem()">+ Add Action Item</button>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">SSO Entra - Platform Engineering (Sebastian)</h2>
+        <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">Parent Epic:&nbsp;<b>DSO-3859 (Q1)</b></div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Task</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 35%;">Progress Detail</th>
+                    <th style="width: 15%;">Deadline</th>
+                    <th style="width: 10%;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">DSO-3870</span>
+                            <span contenteditable="true">Spring Boot Admin</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-done" contenteditable="true">Done</span></td>
+                    <td contenteditable="true">Complete</td>
+                    <td contenteditable="true">January 13th</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                         <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">DSO-3868</span>
+                            <span contenteditable="true">ArgoCD</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-done" contenteditable="true">done</span></td>
+                    <td contenteditable="true">Complete</td>
+                    <td contenteditable="true">January 13th</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                         <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">DSO-3867</span>
+                            <span contenteditable="true">Open WebUI</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-done" contenteditable="true">done</span></td>
+                    <td contenteditable="true">Complete</td>
+                    <td contenteditable="true">January 13th</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+            <tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3869</span>
+                        <span contenteditable="true">Kibana + Elasticsearch</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-progress" contenteditable="true">IN PROGRESS</span></td>
+                <td contenteditable="true">On track</td>
+                <td contenteditable="true">January 16th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3871</span>
+                        <span contenteditable="true">Proxmox</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">January 23rd</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3872</span>
+                        <span contenteditable="true">Kiali (Office Only)</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">January 28th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3875</span>
+                        <span contenteditable="true">Langfuse</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 2nd</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3876</span>
+                        <span contenteditable="true">Chainguard</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 4th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3873</span>
+                        <span contenteditable="true">AWS</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 10th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">DSO-3874</span>
+                        <span contenteditable="true">AWS Cleanup (Delete old apps)</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 11th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr></tbody>
+        </table>
+        <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+    </div>
+
+    <div class="card">
+        <button class="btn-delete-section" onclick="deleteSection(this)" title="Delete Section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <h2 contenteditable="true">Prerequisites &amp; Compliance - Platform Support (Corey)</h2>
+        <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">
+            Parent Ticket: <strong>PA-1692 (Q1)</strong></div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Task</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 35%;">Notes</th>
+                    <th style="width: 15%;">Deadline</th>
+                    <th style="width: 10%;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">PA-1696</span>
+                            <span contenteditable="true">Audit Licensing &amp; SSO Readiness</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-todo" contenteditable="true">to do</span></td>
+                    <td contenteditable="true">On track</td>
+                    <td contenteditable="true">January 15th</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                         <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">PA-1697</span>
+                            <span contenteditable="true">Build Cyber Essentials Policy (Entra)</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-todo" contenteditable="true">to do</span></td>
+                    <td contenteditable="true">On track</td>
+                    <td contenteditable="true">January 21st</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="task-cell">
+                            <span class="jira-key" contenteditable="true">PA-1698</span>
+                            <span contenteditable="true">Establish Emergency "Break Glass' Access</span>
+                        </div>
+                    </td>
+                    <td><span class="task-status ts-ready" contenteditable="true">to do</span></td>
+                    <td contenteditable="true">On track</td>
+                    <td contenteditable="true">January 16th</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>
+            <tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true"><br></span>
+                        <span contenteditable="true"><br></span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true"></span></td>
+                <td contenteditable="true"><br></td>
+                <td contenteditable="true"><br></td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr></tbody>
+        </table>
+        <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+    </div>
+
+    
+
+<div class="card">
+                <button class="btn-delete-section" onclick="deleteSection(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+                <h2 contenteditable="true">Salesforce SSO (Tier 0) - Platform Support (Corey)</h2>
+                <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">Parent Ticket: <b>PA-1693 (Q1)</b></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Task</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 35%;">Progress Detail</th>
+                            <th style="width: 15%;">Deadline</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="task-cell">
+                                    <span class="jira-key" contenteditable="true">PA-1699</span>
+                                    <span contenteditable="true">Project Kickoff &amp; Scoping</span>
+                                </div>
+                            </td>
+                            <td><span class="task-status ts-blocked" contenteditable="true">TO DO</span></td>
+                            <td contenteditable="true">Delayed Q2</td>
+                            <td contenteditable="true">TBD</td>
+                            <td style="text-align: center;">
+                                <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    <tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1700</span>
+                        <span contenteditable="true">Configure Sandbox Environment</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-blocked" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">Delayed Q2</td>
+                <td contenteditable="true">TBD</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1701</span>
+                        <span contenteditable="true">Execute Sandbox UAT</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-blocked" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">Delayed Q2</td>
+                <td contenteditable="true">TBD</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1702</span>
+                        <span contenteditable="true">Production Cover &amp; Enforcement</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-blocked" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">Delayed Q2</td>
+                <td contenteditable="true">TBD</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr></tbody>
+                </table>
+                <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+            </div><div class="card">
+                <button class="btn-delete-section" onclick="deleteSection(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+                <h2 contenteditable="true">Zoom SSO (Tier 1)&nbsp;<span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">- Platform Support (Corey)</span></h2>
+                <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">Parent Ticket:&nbsp;<b>PA-1694 (Q1)</b></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Task</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 35%;">Progress Detail</th>
+                            <th style="width: 15%;">Deadline</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="task-cell">
+                                    <span class="jira-key" contenteditable="true">PA-1703</span>
+                                    <span contenteditable="true">Verify Managed Domain</span>
+                                </div>
+                            </td>
+                            <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                            <td contenteditable="true">N/A</td>
+                            <td contenteditable="true">January 28th</td>
+                            <td style="text-align: center;">
+                                <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    <tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1704</span>
+                        <span contenteditable="true">Configure Entra Enterprise App</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">January 30th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1705</span>
+                        <span contenteditable="true">Configure Licence Mapping Rules</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 4th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr><tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1706</span>
+                        <span contenteditable="true">Test &amp; Enforce Global SSO</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">N/A</td>
+                <td contenteditable="true">February 26th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr></tbody>
+                </table>
+                <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+            </div><div class="card">
+                <button class="btn-delete-section" onclick="deleteSection(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+                <h2 contenteditable="true">Project Closure<span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">&nbsp;</span><span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">- Platform Support (Corey)</span></h2>
+                <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">Parent Ticket:&nbsp;<b>PA-1695 (Q1)</b></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Task</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 35%;">Progress Detail</th>
+                            <th style="width: 15%;">Deadline</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="task-cell">
+                                    <span class="jira-key" contenteditable="true">PA-1707</span>
+                                    <span contenteditable="true">Update Access Documentation</span>
+                                </div>
+                            </td>
+                            <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                            <td contenteditable="true">Details...</td>
+                            <td contenteditable="true">February 20th</td>
+                            <td style="text-align: center;">
+                                <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    <tr>
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">PA-1708</span>
+                        <span contenteditable="true">Post-Go-Live Cleanup</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">Details...</td>
+                <td contenteditable="true">March 13th</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            </tr></tbody>
+                </table>
+                <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+            </div></div>
+
+<button class="btn-add-section" onclick="addSection()">+ Add New Section</button>
+
+<div class="editable-hint">💡 All text is editable. Click "Download Updated Report" to save changes to a new file.</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- 1. GLOBAL HELPERS ---
+        window.updateBar = function(slider) {
+            const bar = slider.previousElementSibling;
+            bar.style.width = slider.value + '%';
+        }
+
+        window.deleteSection = function(btn) {
+            if(confirm("Delete this entire section?")) {
+                btn.parentElement.remove();
+            }
+        }
+        
+        window.deleteTimelineRow = function(btn) {
+            if(confirm("Delete this item?")) {
+                const li = btn.closest('li');
+                if(li) li.remove();
+                else btn.parentElement.remove();
+            }
+        }
+
+        window.deleteTaskRow = function(btn) {
+            if(confirm("Delete this task?")) {
+                btn.closest('tr').remove();
+            }
+        }
+
+        window.addTimelineRow = function() {
+            const div = document.createElement('div');
+            div.className = 'timeline-row';
+            div.innerHTML = `
+                <div class="timeline-label" contenteditable="true">New Item</div>
+                <div class="timeline-track">
+                    <div class="timeline-bar bg-gray" style="width: 50%;"></div>
+                    <input type="range" min="0" max="100" value="50" class="bar-slider" title="Double-click to cycle color" oninput="updateBar(this)">
+                </div>
+                <div class="timeline-status text-gray" contenteditable="true" title="Click to change color">Status...</div>
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            `;
+            document.querySelector('.timeline-container').appendChild(div);
+            reattachListeners();
+        }
+
+        window.addActionItem = function() {
+            const ul = document.getElementById('action-list');
+            const li = document.createElement('li');
+            li.className = 'action-item';
+            li.innerHTML = `
+                <button class="btn-delete-row" onclick="deleteTimelineRow(this)" title="Delete Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+                <span class="action-tag at-decision" contenteditable="true" title="Click to cycle type">Decision</span>
+                <strong contenteditable="true">New Action</strong>
+                <div style="margin-top: 5px; color: #64748b;" contenteditable="true">
+                    Description...
+                </div>
+                <div class="impact-box" title="Click to toggle color theme" contenteditable="true">
+                    IMPACT: Impact description...
+                </div>
+            `;
+            ul.appendChild(li);
+            reattachListeners();
+        }
+
+        window.addSection = function() {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <button class="btn-delete-section" onclick="deleteSection(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+                <h2 contenteditable="true">New Section</h2>
+                <div style="margin-bottom: 15px; font-size: 13px; color: #64748b;" contenteditable="true">Description or Parent Ticket...</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Task</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 35%;">Progress Detail</th>
+                            <th style="width: 15%;">Deadline</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="task-cell">
+                                    <span class="jira-key" contenteditable="true">KEY</span>
+                                    <span contenteditable="true">Task Name</span>
+                                </div>
+                            </td>
+                            <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                            <td contenteditable="true">Details...</td>
+                            <td contenteditable="true">TBC</td>
+                            <td style="text-align: center;">
+                                <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn-add-row" onclick="addTableRow(this)">+ Add Task</button>
+            `;
+            document.getElementById('main-grid').appendChild(div);
+            reattachListeners();
+        }
+
+        window.addTableRow = function(btn) {
+            const table = btn.previousElementSibling.querySelector('tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="task-cell">
+                        <span class="jira-key" contenteditable="true">KEY</span>
+                        <span contenteditable="true">Task Name</span>
+                    </div>
+                </td>
+                <td><span class="task-status ts-todo" contenteditable="true">TO DO</span></td>
+                <td contenteditable="true">Details...</td>
+                <td contenteditable="true">TBC</td>
+                <td style="text-align: center;">
+                    <button class="btn-delete-task" onclick="deleteTaskRow(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                </td>
+            `;
+            table.appendChild(row);
+            reattachListeners();
+        }
+
+        // --- 2. INTERACTIVITY LOGIC ---
+
+        function reattachListeners() {
+            const impactClasses = ['impact-box', 'impact-box-neutral', 'impact-box-success'];
+            const actionTagClasses = ['at-action', 'at-decision', 'at-context', 'at-blocked'];
+            const statusClasses = ['ts-todo', 'ts-progress', 'ts-ready', 'ts-done', 'ts-blocked', 'ts-paused'];
+            const textColors = ['text-green', 'text-amber', 'text-red', 'text-blue', 'text-gray'];
+            const barColors = ['bg-green', 'bg-amber', 'bg-red', 'bg-blue', 'bg-gray'];
+            const cardColors = ['card-status-red', 'card-status-amber', 'card-status-green', 'card-status-blue'];
+
+            // A. Impact Boxes
+            document.querySelectorAll('.impact-box, .impact-box-neutral, .impact-box-success').forEach(box => {
+                if (box.getAttribute('data-clickable')) return;
+                box.setAttribute('data-clickable', 'true');
+                box.addEventListener('click', function(e) {
+                    if(window.getSelection().toString().length === 0) {
+                        let idx = impactClasses.findIndex(cls => this.classList.contains(cls));
+                        if (idx > -1) this.classList.remove(impactClasses[idx]);
+                        this.classList.add(impactClasses[(idx + 1) % impactClasses.length]);
+                    }
+                });
+            });
+
+            // B. Action Tags
+            document.querySelectorAll('.action-tag').forEach(tag => {
+                if (tag.getAttribute('data-clickable')) return;
+                tag.setAttribute('data-clickable', 'true');
+                tag.addEventListener('click', function(e) {
+                    let foundClass = false;
+                    for(let cls of actionTagClasses) {
+                        if(this.classList.contains(cls)) {
+                             this.classList.remove(cls);
+                             let nextIdx = (actionTagClasses.indexOf(cls) + 1) % actionTagClasses.length;
+                             this.classList.add(actionTagClasses[nextIdx]);
+                             foundClass = true;
+                             break;
+                        }
+                    }
+                    if(!foundClass) this.classList.add(actionTagClasses[0]);
+                });
+            });
+
+            // C. Status Pills
+            document.querySelectorAll('.task-status').forEach(pill => {
+                if (pill.getAttribute('data-clickable')) return;
+                pill.setAttribute('data-clickable', 'true');
+                pill.addEventListener('click', function(e) {
+                    let idx = statusClasses.findIndex(cls => this.classList.contains(cls));
+                    if (idx > -1) this.classList.remove(statusClasses[idx]);
+                    else idx = -1;
+                    this.classList.add(statusClasses[(idx + 1) % statusClasses.length]);
+                });
+            });
+
+            // D. Timeline Text
+            document.querySelectorAll('.timeline-status').forEach(text => {
+                if (text.getAttribute('data-bound')) return;
+                text.setAttribute('data-bound', 'true');
+                text.addEventListener('click', function(e) {
+                    const row = this.parentElement;
+                    const bar = row.querySelector('.timeline-bar');
+                    let idx = textColors.findIndex(cls => this.classList.contains(cls));
+                    
+                    if (idx > -1) {
+                        this.classList.remove(textColors[idx]);
+                        if(bar) bar.classList.remove(barColors[idx]);
+                    } else idx = -1;
+
+                    let next = (idx + 1) % textColors.length;
+                    this.classList.add(textColors[next]);
+                    if(bar) bar.classList.add(barColors[next]);
+                });
+            });
+
+             // E. Root Cause Card Header
+             const rootCard = document.getElementById('root-cause-card');
+             if(rootCard) {
+                 const h2 = rootCard.querySelector('h2');
+                 if(h2 && !h2.getAttribute('data-bound')) {
+                     h2.setAttribute('data-bound', 'true');
+                     h2.addEventListener('click', function() {
+                         let idx = cardColors.findIndex(cls => rootCard.classList.contains(cls));
+                         if(idx > -1) rootCard.classList.remove(cardColors[idx]);
+                         else idx = -1;
+                         rootCard.classList.add(cardColors[(idx + 1) % cardColors.length]);
+                     });
+                 }
+             }
+             
+             // F. Header Status
+             const headerPill = document.getElementById('overall-status');
+             if(headerPill && !headerPill.getAttribute('data-bound')) {
+                 headerPill.setAttribute('data-bound', 'true');
+                 const hClasses = ['status-red', 'status-amber', 'status-green'];
+                 headerPill.addEventListener('click', function() {
+                     let idx = hClasses.findIndex(cls => this.classList.contains(cls));
+                     if(idx > -1) this.classList.remove(hClasses[idx]);
+                     else idx = -1;
+                     this.classList.add(hClasses[(idx + 1) % hClasses.length]);
+                 });
+             }
+        }
+
+        // --- 3. EXPORT / SAVE FUNCTIONALITY ---
+
+        window.downloadUpdatedHTML = function() {
+            // 1. Create a deep clone of the entire document to manipulate
+            const clone = document.documentElement.cloneNode(true);
+            
+            // 2. "Bake" current Input values into HTML Attributes
+            // (Inputs normally don't update their HTML source when you type, so we force them to)
+            const inputs = clone.querySelectorAll('input, textarea, select');
+            const originalInputs = document.querySelectorAll('input, textarea, select');
+            
+            originalInputs.forEach((orig, i) => {
+                const target = inputs[i];
+                if (orig.type === 'checkbox' || orig.type === 'radio') {
+                    if (orig.checked) target.setAttribute('checked', 'checked');
+                    else target.removeAttribute('checked');
+                } else {
+                    target.setAttribute('value', orig.value);
+                }
+            });
+
+            // 3. Remove "data-clickable" and "data-bound" attributes to prevent event listener buildup
+            clone.querySelectorAll('[data-clickable], [data-bound]').forEach(el => {
+                el.removeAttribute('data-clickable');
+                el.removeAttribute('data-bound');
+            });
+
+            // 4. Generate the Blob
+            const htmlContent = `<!DOCTYPE html>\n<html lang="en">\n${clone.innerHTML}\n</html>`;
+            const blob = new Blob([htmlContent], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            
+            // 5. Create timestamped filename
+            const date = new Date();
+            const dateStr = date.toISOString().split('T')[0];
+            const fileName = `Project_Status_Report_${dateStr}.html`;
+
+            // 6. Trigger Download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Init listeners
+        reattachListeners();
+        // Fallback for pasted content
+        setInterval(reattachListeners, 2000);
+    });
+</script>
+
+</body>
+</html>
