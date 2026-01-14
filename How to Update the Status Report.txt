@@ -1,63 +1,42 @@
-How to Update the Status Report
+How to Update the Project Status Report
+This dashboard is a self-contained HTML file. You do not need to be a developer to update it. All changes—including adding new tasks and saving the file—are done directly in your browser.
 
-This dashboard is a self-contained HTML file. You do not need to be a developer to update it. Most changes can be made directly in the browser.
+1. Editing Text & Statuses
+Edit Text: Click anywhere on the page (titles, dates, descriptions, task names) and simply type. It works just like a Word document.
 
-Method 1: Quick Updates (In-Browser)
+Cycle Colors:
 
-Best for: Updating status, colours, and text before a meeting.
+Status Pills: Click any status (e.g., "IN PROGRESS", "TO DO") to cycle through colors (Red/Amber/Green/Blue/Gray).
 
-1. Editing Text
+Project Status (Top Right): Click the main status pill to cycle the overall project health.
 
-Click anywhere on the page to edit text directly.
+Timeline Rows: Click the status text on the right side of a timeline bar to change the color of that specific row.
 
-You can rename tasks, update dates, or rewrite descriptions just like in a Word doc.
+Section Headers: Click specific headers (like "Current Blocker") to change the accent color of the card border.
 
 2. Updating the Timeline
+Resize Bars: Drag the slider circle on any timeline bar left or right to adjust the percentage.
 
-Resize Bars: Click and drag the coloured bar left or right.
+Change Status: Click the text to the right of the bar (e.g., "Not started") to cycle the color theme for that row.
 
-Change Colours: Click the Status Text next to the bar (e.g., "Target: Dec 15") to cycle through colours:
+3. Adding & Removing Items
+You no longer need to edit the code to add or remove rows.
 
-Green → Amber → Red → Blue → Grey.
+Add New Items: Look for the + Add ... buttons at the bottom of every section (e.g., + Add Task, + Add Timeline Item, + Add New Section).
 
-3. Updating Statuses & Pills
+Delete Items:
 
-Project Status (Top Right): Click the "STATUS: BLOCKED" pill to cycle Red/Amber/Green.
+Tasks & Rows: Click the Trash Can icon (🗑️) on the far right of any row to delete it.
 
-Task Status (In Tables): Click any status pill (e.g., "IN PROGRESS") to cycle colours. Click inside the text to rename it.
+Sections: Click the Trash Can icon in the top-right corner of any white card to remove the entire section.
 
-Ticket Age: Click the age text (e.g., "2 Months") to cycle severity (Red/Amber/Green).
+4. Saving Your Changes (Important!)
+Because this runs in a browser, "File > Save" often tries to save the whole webpage structure rather than your changes.
 
-4. Changing Themes (Cards & Boxes)
+Do NOT use Ctrl+S or "Save As" in the browser menu.
 
-Root Cause Card: Click the Title (e.g., "Root Cause: Resource Deadlock") to cycle the card's border colour.
+Instead: Click the black "Download Updated Report" button at the top right of the page.
 
-Impact/Status Boxes: Click any coloured box in the "Actions" list to cycle themes (Red → Grey → Green).
+This will automatically generate and download a new HTML file with today's date in the filename (e.g., Project_Status_Report_2026-01-14.html).
 
-Method 2: Adding New Items (Permanent Code Edits)
-
-Best for: Adding new rows or sections for next week.
-
-Right-click crowdstrike_status.html and choose Open With > Notepad (Windows) or TextEdit (Mac).
-
-1. Adding a New Timeline Row
-
-Search for <div class="timeline-row">. Copy an entire block and paste it below the last one.
-
-To set a default start percentage: Update value="65" inside the <input> tag.
-
-2. Adding a New Ticket
-
-Search for the table body <tbody>. Copy a row <tr>...</tr> and paste it where needed.
-
-3. Adding a New Action Item
-
-Search for <ul class="action-list">. Copy an <li> block and paste it.
-
-To change the tag type, change the class:
-
-<span class="action-tag at-decision"> = Decision (Yellow)
-
-<span class="action-tag at-action"> = Action (Blue)
-
-<span class="action-tag at-blocked"> = Blocked (Red)
+Next time: Open this new file to continue working.
